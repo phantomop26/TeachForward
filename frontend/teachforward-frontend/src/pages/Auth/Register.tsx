@@ -109,7 +109,13 @@ const Register: React.FC = () => {
     e.preventDefault();
     
     if (!formData.agreeToTerms) {
-      setError('Please agree to the terms and conditions');
+      setError('You must agree to the Terms of Service and Privacy Policy to continue');
+      return;
+    }
+
+    // Validate password length (bcrypt limit is 72 bytes)
+    if (formData.password.length > 72) {
+      setError('Password must be 72 characters or less');
       return;
     }
 
@@ -117,16 +123,51 @@ const Register: React.FC = () => {
     setError('');
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Truncate password to 72 characters as a safety measure
+      const password = formData.password.substring(0, 72);
       
-      console.log('Registration data:', formData);
-      
-      // Mock successful registration
-      localStorage.setItem('isAuthenticated', 'true');
+      const payload = {
+        email: formData.email,
+        password: password,
+        full_name: `${formData.firstName} ${formData.lastName}`,
+        role: formData.userType
+      };
+
+      const res = await fetch(process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}/auth/register` : 'http://localhost:8000/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Registration failed' }));
+        throw new Error(err.detail || 'Registration failed');
+      }
+
+      await res.json();
+      // auto-login after register
+      try {
+        const loginRes = await fetch(process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}/auth/login` : 'http://localhost:8000/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email, password: password })
+        });
+        if (loginRes.ok) {
+          const tok = await loginRes.json();
+          if (tok.access_token) {
+            localStorage.setItem('access_token', tok.access_token);
+            localStorage.setItem('isAuthenticated', 'true');
+            // Trigger custom event for Header to update immediately
+            window.dispatchEvent(new Event('auth-change'));
+          }
+        }
+      } catch (e) {
+        // ignore auto-login failure for now
+      }
       navigate('/dashboard');
     } catch (err) {
-      setError('Registration failed. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Registration failed. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -178,7 +219,6 @@ const Register: React.FC = () => {
             >
               <MenuItem value="student">Student</MenuItem>
               <MenuItem value="tutor">Tutor</MenuItem>
-              <MenuItem value="parent">Parent</MenuItem>
             </TextField>
             
             <TextField
@@ -187,7 +227,12 @@ const Register: React.FC = () => {
               label="Password"
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
-              onChange={(e) => handleInputChange('password', e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value.substring(0, 72);
+                handleInputChange('password', value);
+              }}
+              error={formData.password.length >= 70}
+              helperText={formData.password.length >= 70 ? `${formData.password.length}/72 characters (limit reached)` : `${formData.password.length}/72 characters`}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -324,15 +369,18 @@ const Register: React.FC = () => {
             
             <Box sx={{ mt: 2 }}>
               <FormControlLabel
+                required
                 control={
                   <Checkbox
                     checked={formData.agreeToTerms}
                     onChange={(e) => handleInputChange('agreeToTerms', e.target.checked)}
                     color="primary"
+                    required
                   />
                 }
                 label={
                   <Typography variant="body2">
+                    <span style={{ color: 'red' }}>* </span>
                     I agree to the{' '}
                     <Link href="#" color="primary">Terms of Service</Link>
                     {' '}and{' '}

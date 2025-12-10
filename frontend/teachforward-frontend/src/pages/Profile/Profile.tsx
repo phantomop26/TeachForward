@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -39,7 +39,6 @@ import {
   Phone,
   LocationOn,
   CalendarToday,
-  Star,
   EmojiEvents,
 } from '@mui/icons-material';
 
@@ -69,21 +68,22 @@ const Profile: React.FC = () => {
   const [editMode, setEditMode] = useState(false);
   const [openAvatarDialog, setOpenAvatarDialog] = useState(false);
 
-  // Mock user data
+  // Real user data from API
   const [userData, setUserData] = useState({
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@email.com',
-    phone: '+1 (555) 123-4567',
-    grade: '11th Grade',
-    school: 'Lincoln High School',
-    location: 'New York, NY',
-    joinDate: '2025-09-01',
-    bio: 'Passionate about mathematics and science. Looking to improve my understanding of calculus and physics.',
-    subjects: ['Mathematics', 'Physics', 'Chemistry'],
-    goals: 'Improve SAT scores and prepare for college applications',
-    studyStyle: 'Visual learner',
-    avatar: '/api/placeholder/150/150',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    grade: '',
+    school: '',
+    location: '',
+    joinDate: '',
+    bio: '',
+    subjects: [] as string[],
+    goals: '',
+    studyStyle: '',
+    avatar: '',
+    role: '',
     
     // Settings
     emailNotifications: true,
@@ -94,14 +94,65 @@ const Profile: React.FC = () => {
     marketingEmails: false,
   });
 
-  const stats = {
-    totalSessions: 24,
-    completedAssignments: 18,
-    averageScore: 87,
-    studyHours: 48,
-    streak: 7,
-    rank: 'Gold',
-  };
+  const [stats, setStats] = useState({
+    totalSessions: 0,
+    completedAssignments: 0,
+    averageScore: 0,
+    hoursLearned: 0,
+  });
+
+  // Fetch user data and stats
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+
+        // Fetch user profile
+        const userRes = await fetch('http://localhost:8000/auth/me', { headers });
+        if (userRes.ok) {
+          const user = await userRes.json();
+          const nameParts = (user.full_name || '').split(' ');
+          setUserData(prev => ({
+            ...prev,
+            firstName: nameParts[0] || '',
+            lastName: nameParts.slice(1).join(' ') || '',
+            email: user.email || '',
+            role: user.role || 'student',
+            bio: user.bio || '',
+            joinDate: user.created_at ? new Date(user.created_at).toLocaleDateString() : '',
+          }));
+        }
+
+        // Fetch progress/stats
+        const progressRes = await fetch('http://localhost:8000/progress/', { headers });
+        if (progressRes.ok) {
+          const progressData = await progressRes.json();
+          setStats({
+            totalSessions: progressData.total_sessions || 0,
+            completedAssignments: 0, // Will be calculated from submissions
+            averageScore: progressData.average_grade || 0,
+            hoursLearned: progressData.total_hours || 0,
+          });
+        }
+
+        // Fetch submissions to count completed assignments
+        const submissionsRes = await fetch('http://localhost:8000/homework/my-submissions', { headers });
+        if (submissionsRes.ok) {
+          const submissions = await submissionsRes.json();
+          setStats(prev => ({
+            ...prev,
+            completedAssignments: submissions.length,
+          }));
+        }
+
+      } catch (err) {
+        console.error('Error fetching profile data:', err);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const achievements = [
     { id: 1, title: 'First Session', description: 'Completed your first tutoring session', earned: true },
@@ -223,23 +274,10 @@ const Profile: React.FC = () => {
           <Card sx={{ textAlign: 'center' }}>
             <CardContent>
               <Typography variant="h6" color="info.main">
-                {stats.studyHours}h
+                {stats.hoursLearned}h
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Study Hours
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-          <Card sx={{ textAlign: 'center' }}>
-            <CardContent>
-              <Typography variant="h6" color="warning.main">
-                {stats.streak}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Day Streak
               </Typography>
             </CardContent>
           </Card>
@@ -253,17 +291,6 @@ const Profile: React.FC = () => {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Assignments
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-          <Card sx={{ textAlign: 'center' }}>
-            <CardContent>
-              <Star sx={{ color: 'gold', fontSize: 30 }} />
-              <Typography variant="body2" color="text.secondary">
-                {stats.rank} Rank
               </Typography>
             </CardContent>
           </Card>

@@ -28,6 +28,7 @@ import {
   CropSquare,
   ShowChart,
   ZoomIn,
+  Schedule,
   ZoomOut,
   Fullscreen,
   FullscreenExit,
@@ -50,33 +51,46 @@ const TutoringSession: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentTool, setCurrentTool] = useState('brush');
+  const [sessionData, setSessionData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      sender: 'Dr. Sarah Wilson',
-      message: 'Hello! Ready to start our mathematics session?',
+      sender: 'Tutor',
+      message: 'Hello! Ready to start our session?',
       timestamp: '10:00 AM',
     },
     {
       id: '2',
       sender: 'You',
-      message: 'Yes, I have some questions about calculus derivatives.',
+      message: 'Yes, I have some questions.',
       timestamp: '10:01 AM',
     },
   ]);
   const [newMessage, setNewMessage] = useState('');
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // Mock session data
-  const sessionData = {
-    id: sessionId,
-    tutorName: 'Dr. Sarah Wilson',
-    subject: 'Mathematics',
-    topic: 'Calculus - Derivatives',
-    startTime: '10:00 AM',
-    duration: 60,
-    status: 'active',
-  };
+  // Fetch session data
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch(`http://localhost:8000/sessions/my-sessions`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (res.ok) {
+          const sessions = await res.json();
+          const session = sessions.find((s: any) => s.id === parseInt(sessionId || '0'));
+          setSessionData(session);
+        }
+      } catch (err) {
+        console.error('Error fetching session:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSession();
+  }, [sessionId]);
 
   // Whiteboard drawing functions
   useEffect(() => {
@@ -164,23 +178,50 @@ const TutoringSession: React.FC = () => {
 
   return (
     <Container maxWidth={false} sx={{ py: 2, height: 'calc(100vh - 100px)' }}>
-      {/* Session Header */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="h6">
-              {sessionData.subject} Session with {sessionData.tutorName}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Topic: {sessionData.topic} • Started: {sessionData.startTime}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Chip label={`${sessionData.duration} min`} color="primary" />
-            <Chip label={sessionData.status} color="success" />
-          </Box>
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <Typography>Loading session...</Typography>
         </Box>
-      </Paper>
+      ) : !sessionData ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <Typography>Session not found</Typography>
+        </Box>
+      ) : (
+        <>
+          {/* Session Header */}
+          <Paper sx={{ p: 2, mb: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box>
+                <Typography variant="h6">
+                  {sessionData.topic || 'Tutoring Session'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Session ID: {sessionData.id} • Status: {sessionData.status}
+                </Typography>
+                {sessionData.zoom_link && (
+                  <Box sx={{ mt: 1 }}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<VideoCall />}
+                      href={sessionData.zoom_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Join Zoom Meeting
+                    </Button>
+                    <Typography variant="caption" sx={{ ml: 2, color: 'text.secondary' }}>
+                      {sessionData.zoom_link}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Chip label={new Date(sessionData.start).toLocaleString()} color="primary" icon={<Schedule />} />
+                <Chip label={sessionData.status} color="success" />
+              </Box>
+            </Box>
+          </Paper>
 
       <Grid container spacing={2} sx={{ height: 'calc(100% - 120px)' }}>
         {/* Main Content Area */}
@@ -403,6 +444,8 @@ const TutoringSession: React.FC = () => {
           </Button>
         </Box>
       </Paper>
+        </>
+      )}
     </Container>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -7,410 +7,688 @@ import {
   Card,
   CardContent,
   Button,
-  Avatar,
   Chip,
   List,
   ListItem,
   ListItemText,
-  ListItemAvatar,
   Paper,
-  LinearProgress,
-  IconButton,
+  Alert,
+  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
-  MenuItem,
+  IconButton,
 } from '@mui/material';
 import {
   VideoCall,
   Schedule,
   Assignment,
   TrendingUp,
-  Person,
   Add,
-  Edit,
   CalendarToday,
-  AccessTime,
+  Delete,
 } from '@mui/icons-material';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import dayjs, { Dayjs } from 'dayjs';
+import { useNavigate } from 'react-router-dom';
+import AIChatbot from '../../components/AIChatbot/AIChatbot';
 
 interface Session {
-  id: string;
-  tutorName: string;
-  subject: string;
-  date: string;
-  time: string;
-  status: 'upcoming' | 'completed' | 'cancelled';
-  duration: number;
+  id: number;
+  tutor_id: number;
+  student_id: number;
+  start: string;
+  end: string;
+  topic: string;
+  status: string;
 }
 
 interface AssignmentData {
+  id: number;
+  title: string;
+  description: string;
+  due_date: string;
+  tutor_id: number;
+}
+
+interface Submission {
+  id: number;
+  assignment_id: number;
+  student_id: number;
+  grade: string | null;
+  created_at: string;
+}
+
+interface Progress {
+  total_sessions: number;
+  total_hours: number;
+  average_grade: number | null;
+}
+
+interface CalendarEvent {
   id: string;
   title: string;
-  subject: string;
-  dueDate: string;
-  status: 'pending' | 'submitted' | 'graded';
-  score?: number;
+  date: string;
+  time: string;
+  type: 'session' | 'assignment' | 'custom';
+  description?: string;
 }
 
 const Dashboard: React.FC = () => {
-  const [openScheduleDialog, setOpenScheduleDialog] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Dayjs | null>(dayjs());
-  const [selectedSubject, setSelectedSubject] = useState('');
-  const [selectedTutor, setSelectedTutor] = useState('');
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [userName, setUserName] = useState('User');
+  
+  // Real data from API
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [assignments, setAssignments] = useState<AssignmentData[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [progress, setProgress] = useState<Progress>({
+    total_sessions: 0,
+    total_hours: 0,
+    average_grade: null,
+  });
+  const [courseGrades, setCourseGrades] = useState<number[]>([]);
+  const [customEvents, setCustomEvents] = useState<CalendarEvent[]>([]);
+  const [openEventDialog, setOpenEventDialog] = useState(false);
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventDate, setEventDate] = useState('');
+  const [eventTime, setEventTime] = useState('');
+  const [eventDescription, setEventDescription] = useState('');
 
-  // Mock data - in a real app, this would come from an API
-  const upcomingSessions: Session[] = [
-    {
-      id: '1',
-      tutorName: 'Dr. Sarah Wilson',
-      subject: 'Mathematics',
-      date: '2025-10-17',
-      time: '14:00',
-      status: 'upcoming',
-      duration: 60,
-    },
-    {
-      id: '2',
-      tutorName: 'Prof. Michael Brown',
-      subject: 'Physics',
-      date: '2025-10-19',
-      time: '10:00',
-      status: 'upcoming',
-      duration: 90,
-    },
-    {
-      id: '3',
-      tutorName: 'Ms. Emily Davis',
-      subject: 'Chemistry',
-      date: '2025-10-20',
-      time: '16:00',
-      status: 'upcoming',
-      duration: 60,
-    },
-  ];
+  useEffect(() => {
+    // Load custom events from localStorage
+    const savedEvents = localStorage.getItem('customCalendarEvents');
+    if (savedEvents) {
+      setCustomEvents(JSON.parse(savedEvents));
+    }
+  }, []);
 
-  const assignments: AssignmentData[] = [
-    {
-      id: '1',
-      title: 'Calculus Problem Set',
-      subject: 'Mathematics',
-      dueDate: '2025-10-18',
-      status: 'pending',
-    },
-    {
-      id: '2',
-      title: 'Physics Lab Report',
-      subject: 'Physics',
-      dueDate: '2025-10-20',
-      status: 'submitted',
-    },
-    {
-      id: '3',
-      title: 'Chemical Equations Quiz',
-      subject: 'Chemistry',
-      dueDate: '2025-10-15',
-      status: 'graded',
-      score: 85,
-    },
-  ];
+  useEffect(() => {
+    fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const subjects = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'History'];
-  const tutors = ['Dr. Sarah Wilson', 'Prof. Michael Brown', 'Ms. Emily Davis', 'Dr. John Smith'];
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'upcoming': return 'primary';
-      case 'completed': return 'success';
-      case 'cancelled': return 'error';
-      case 'pending': return 'warning';
-      case 'submitted': return 'info';
-      case 'graded': return 'success';
-      default: return 'default';
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+
+      // Fetch user info
+      const userRes = await fetch('http://localhost:8000/auth/me', { headers });
+      if (userRes.ok) {
+        const user = await userRes.json();
+        setUserName(user.full_name || user.email);
+      }
+
+      // Fetch sessions
+      const sessionsRes = await fetch('http://localhost:8000/sessions/', { headers });
+      if (sessionsRes.ok) {
+        const sessionsData = await sessionsRes.json();
+        setSessions(sessionsData || []);
+      }
+
+      // Fetch assignments
+      const assignmentsRes = await fetch('http://localhost:8000/homework/assignments', { headers });
+      if (assignmentsRes.ok) {
+        const assignmentsData = await assignmentsRes.json();
+        setAssignments(assignmentsData || []);
+      }
+
+      // Fetch submissions
+      const submissionsRes = await fetch('http://localhost:8000/homework/submissions', { headers });
+      if (submissionsRes.ok) {
+        const submissionsData = await submissionsRes.json();
+        setSubmissions(submissionsData || []);
+      }
+
+      // Fetch progress
+      const progressRes = await fetch('http://localhost:8000/progress/', { headers });
+      if (progressRes.ok) {
+        const progressData = await progressRes.json();
+        setProgress(progressData || { total_sessions: 0, total_hours: 0, average_grade: null });
+      }
+
+      // Fetch courses and calculate average grade
+      const coursesRes = await fetch('http://localhost:8000/grades/courses', { headers });
+      if (coursesRes.ok) {
+        const coursesData = await coursesRes.json();
+        const grades = [];
+        for (const course of coursesData) {
+          const gradeRes = await fetch(`http://localhost:8000/grades/courses/${course.id}/grade`, { headers });
+          if (gradeRes.ok) {
+            const gradeData = await gradeRes.json();
+            if (gradeData.weighted_grade !== null) {
+              grades.push(gradeData.weighted_grade);
+            }
+          }
+        }
+        setCourseGrades(grades);
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data');
+      setLoading(false);
     }
   };
 
-  const handleScheduleSession = () => {
-    // Handle session scheduling logic here
-    console.log('Scheduling session:', {
-      date: selectedDate,
-      subject: selectedSubject,
-      tutor: selectedTutor,
-    });
-    setOpenScheduleDialog(false);
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Container sx={{ py: 4 }}>
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Welcome back, Student!
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            Here's your learning dashboard
-          </Typography>
-        </Box>
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  };
 
-        {/* Quick Stats */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <VideoCall color="primary" sx={{ mr: 2 }} />
-                  <Box>
-                    <Typography variant="h6">8</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Sessions This Month
-                    </Typography>
-                  </Box>
+  const getPendingAssignments = () => {
+    const submittedIds = submissions.map(s => s.assignment_id);
+    return assignments.filter(a => !submittedIds.includes(a.id));
+  };
+
+  const getUpcomingSessions = () => {
+    const now = new Date();
+    return sessions
+      .filter(s => new Date(s.start) > now)
+      .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+      .slice(0, 3);
+  };
+
+  const getCalendarEvents = (): CalendarEvent[] => {
+    const events: CalendarEvent[] = [];
+    
+    // Add upcoming sessions
+    sessions.forEach(session => {
+      if (new Date(session.start) > new Date()) {
+        events.push({
+          id: `session-${session.id}`,
+          title: session.topic || 'Tutoring Session',
+          date: formatDate(session.start),
+          time: formatTime(session.start),
+          type: 'session',
+        });
+      }
+    });
+    
+    // Add pending assignments
+    getPendingAssignments().forEach(assignment => {
+      events.push({
+        id: `assignment-${assignment.id}`,
+        title: assignment.title,
+        date: formatDate(assignment.due_date),
+        time: '',
+        type: 'assignment',
+      });
+    });
+    
+    // Add custom events
+    customEvents.forEach(event => {
+      events.push(event);
+    });
+    
+    return events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  };
+
+  const handleAddCustomEvent = () => {
+    if (!eventTitle || !eventDate) return;
+    
+    const newEvent: CalendarEvent = {
+      id: `custom-${Date.now()}`,
+      title: eventTitle,
+      date: eventDate,
+      time: eventTime,
+      type: 'custom',
+      description: eventDescription,
+    };
+    
+    const updatedEvents = [...customEvents, newEvent];
+    setCustomEvents(updatedEvents);
+    localStorage.setItem('customCalendarEvents', JSON.stringify(updatedEvents));
+    
+    // Reset form
+    setEventTitle('');
+    setEventDate('');
+    setEventTime('');
+    setEventDescription('');
+    setOpenEventDialog(false);
+  };
+
+  const handleDeleteCustomEvent = (eventId: string) => {
+    const updatedEvents = customEvents.filter(e => e.id !== eventId);
+    setCustomEvents(updatedEvents);
+    localStorage.setItem('customCalendarEvents', JSON.stringify(updatedEvents));
+  };
+
+  const calculateAverageGrade = (): string => {
+    if (courseGrades.length === 0) return 'N/A';
+    const avg = courseGrades.reduce((sum, grade) => sum + grade, 0) / courseGrades.length;
+    return `${Math.round(avg)}%`;
+  };
+
+  if (loading) {
+    return (
+      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
+
+  return (
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+      {/* Welcome Section */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          Welcome back, {userName}!
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Here's your learning dashboard
+        </Typography>
+      </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Stats Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography color="text.secondary" gutterBottom>
+                    Total Sessions
+                  </Typography>
+                  <Typography variant="h4">{progress.total_sessions}</Typography>
                 </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Assignment color="warning" sx={{ mr: 2 }} />
-                  <Box>
-                    <Typography variant="h6">3</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Pending Assignments
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <TrendingUp color="success" sx={{ mr: 2 }} />
-                  <Box>
-                    <Typography variant="h6">87%</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Average Score
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Schedule color="info" sx={{ mr: 2 }} />
-                  <Box>
-                    <Typography variant="h6">24h</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Study Time
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+                <Schedule color="primary" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
 
-        <Grid container spacing={3}>
-          {/* Upcoming Sessions */}
-          <Grid size={{ xs: 12, md: 8 }}>
-            <Paper sx={{ p: 3, mb: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6">Upcoming Sessions</Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<Add />}
-                  onClick={() => setOpenScheduleDialog(true)}
-                >
-                  Schedule Session
-                </Button>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography color="text.secondary" gutterBottom>
+                    Pending Assignments
+                  </Typography>
+                  <Typography variant="h4">{getPendingAssignments().length}</Typography>
+                </Box>
+                <Assignment color="primary" sx={{ fontSize: 40 }} />
               </Box>
-              
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography color="text.secondary" gutterBottom>
+                    Average Grade
+                  </Typography>
+                  <Typography variant="h4">
+                    {calculateAverageGrade()}
+                  </Typography>
+                </Box>
+                <TrendingUp color="primary" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography color="text.secondary" gutterBottom>
+                    Study Hours
+                  </Typography>
+                  <Typography variant="h4">{progress.total_hours}h</Typography>
+                </Box>
+                <VideoCall color="primary" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Main Content Grid */}
+      <Grid container spacing={3}>
+        {/* Upcoming Sessions */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">Upcoming Sessions</Typography>
+              <Button
+                startIcon={<Add />}
+                variant="outlined"
+                size="small"
+                onClick={() => navigate('/sessions')}
+              >
+                Book Session
+              </Button>
+            </Box>
+            
+            {getUpcomingSessions().length === 0 ? (
+              <Alert severity="info">
+                No upcoming sessions. Book a tutoring session to get started!
+              </Alert>
+            ) : (
               <List>
-                {upcomingSessions.map((session) => (
-                  <ListItem key={session.id} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 1 }}>
-                    <ListItemAvatar>
-                      <Avatar>
-                        <Person />
-                      </Avatar>
-                    </ListItemAvatar>
+                {getUpcomingSessions().map((session) => (
+                  <ListItem
+                    key={session.id}
+                    sx={{
+                      border: 1,
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      mb: 1,
+                    }}
+                  >
                     <ListItemText
-                      primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="subtitle1">{session.subject}</Typography>
+                      primary={session.topic || 'Session'}
+                      secondary={
+                        <>
+                          <Typography component="span" variant="body2" color="text.primary">
+                            {formatDate(session.start)} at {formatTime(session.start)}
+                          </Typography>
+                          <br />
                           <Chip
                             label={session.status}
-                            color={getStatusColor(session.status) as any}
                             size="small"
+                            color="primary"
+                            sx={{ mt: 0.5 }}
                           />
-                        </Box>
-                      }
-                      secondary={
-                        <Box>
-                          <Typography variant="body2">Tutor: {session.tutorName}</Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                            <CalendarToday fontSize="small" />
-                            <Typography variant="body2">{session.date}</Typography>
-                            <AccessTime fontSize="small" />
-                            <Typography variant="body2">{session.time} ({session.duration}min)</Typography>
-                          </Box>
-                        </Box>
+                        </>
                       }
                     />
-                    <Button variant="outlined" size="small">
-                      Join Session
-                    </Button>
                   </ListItem>
                 ))}
               </List>
-            </Paper>
+            )}
+          </Paper>
+        </Grid>
 
-            {/* Assignments */}
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>Recent Assignments</Typography>
+        {/* Recent Assignments */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">Pending Assignments</Typography>
+              <Button
+                startIcon={<Assignment />}
+                variant="outlined"
+                size="small"
+                onClick={() => navigate('/homework')}
+              >
+                View All
+              </Button>
+            </Box>
+            
+            {getPendingAssignments().length === 0 ? (
+              <Alert severity="success">
+                All caught up! No pending assignments.
+              </Alert>
+            ) : (
               <List>
-                {assignments.map((assignment) => (
-                  <ListItem key={assignment.id} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 1 }}>
+                {getPendingAssignments().slice(0, 3).map((assignment) => (
+                  <ListItem
+                    key={assignment.id}
+                    sx={{
+                      border: 1,
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      mb: 1,
+                    }}
+                  >
+                    <ListItemText
+                      primary={assignment.title}
+                      secondary={
+                        <>
+                          {assignment.description && (
+                            <>
+                              <Typography component="span" variant="body2">
+                                {assignment.description.substring(0, 50)}
+                                {assignment.description.length > 50 ? '...' : ''}
+                              </Typography>
+                              <br />
+                            </>
+                          )}
+                          <Typography component="span" variant="body2" color="error">
+                            Due: {formatDate(assignment.due_date)}
+                          </Typography>
+                        </>
+                      }
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Paper>
+        </Grid>
+
+        {/* Calendar */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">Calendar</Typography>
+              <Button
+                startIcon={<Add />}
+                variant="outlined"
+                size="small"
+                onClick={() => setOpenEventDialog(true)}
+              >
+                Add Event
+              </Button>
+            </Box>
+            
+            {getCalendarEvents().length === 0 ? (
+              <Alert severity="info">
+                No upcoming events. Schedule a session or check your assignments!
+              </Alert>
+            ) : (
+              <List sx={{ maxHeight: 400, overflow: 'auto' }}>
+                {getCalendarEvents().slice(0, 7).map((event) => (
+                  <ListItem
+                    key={event.id}
+                    sx={{
+                      border: 1,
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      mb: 1,
+                      bgcolor: event.type === 'session' ? 'primary.50' : event.type === 'assignment' ? 'warning.50' : 'success.50',
+                    }}
+                    secondaryAction={
+                      event.type === 'custom' ? (
+                        <IconButton edge="end" onClick={() => handleDeleteCustomEvent(event.id)} color="error">
+                          <Delete />
+                        </IconButton>
+                      ) : null
+                    }
+                  >
                     <ListItemText
                       primary={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="subtitle1">{assignment.title}</Typography>
-                          <Chip
-                            label={assignment.status}
-                            color={getStatusColor(assignment.status) as any}
-                            size="small"
-                          />
+                          {event.type === 'session' && <Schedule fontSize="small" />}
+                          {event.type === 'assignment' && <Assignment fontSize="small" />}
+                          {event.type === 'custom' && <CalendarToday fontSize="small" />}
+                          <Typography variant="subtitle2">{event.title}</Typography>
                         </Box>
                       }
                       secondary={
-                        <Box>
-                          <Typography variant="body2">Subject: {assignment.subject}</Typography>
-                          <Typography variant="body2">Due: {assignment.dueDate}</Typography>
-                          {assignment.score && (
-                            <Typography variant="body2" color="success.main">
-                              Score: {assignment.score}%
-                            </Typography>
+                        <>
+                          <Typography component="span" variant="body2" color="text.primary">
+                            {event.date}
+                          </Typography>
+                          {event.time && (
+                            <>
+                              {' • '}
+                              <Typography component="span" variant="body2">
+                                {event.time}
+                              </Typography>
+                            </>
                           )}
-                        </Box>
+                          {event.description && (
+                            <>
+                              <br />
+                              <Typography component="span" variant="body2" color="text.secondary">
+                                {event.description}
+                              </Typography>
+                            </>
+                          )}
+                          <br />
+                          <Chip
+                            label={event.type === 'session' ? 'Session' : event.type === 'assignment' ? 'Assignment' : 'Event'}
+                            size="small"
+                            color={event.type === 'session' ? 'primary' : event.type === 'assignment' ? 'warning' : 'success'}
+                            sx={{ mt: 0.5 }}
+                          />
+                        </>
                       }
                     />
-                    <IconButton>
-                      <Edit />
-                    </IconButton>
                   </ListItem>
                 ))}
               </List>
-            </Paper>
-          </Grid>
-
-          {/* Progress Tracking */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Paper sx={{ p: 3, mb: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>Subject Progress</Typography>
-              
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2">Mathematics</Typography>
-                  <Typography variant="body2">85%</Typography>
-                </Box>
-                <LinearProgress variant="determinate" value={85} />
-              </Box>
-              
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2">Physics</Typography>
-                  <Typography variant="body2">72%</Typography>
-                </Box>
-                <LinearProgress variant="determinate" value={72} />
-              </Box>
-              
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2">Chemistry</Typography>
-                  <Typography variant="body2">90%</Typography>
-                </Box>
-                <LinearProgress variant="determinate" value={90} />
-              </Box>
-            </Paper>
-
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>Quick Actions</Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Button variant="outlined" fullWidth startIcon={<VideoCall />}>
-                  Start Study Session
-                </Button>
-                <Button variant="outlined" fullWidth startIcon={<Assignment />}>
-                  Submit Assignment
-                </Button>
-                <Button variant="outlined" fullWidth startIcon={<TrendingUp />}>
-                  View Progress Report
-                </Button>
-              </Box>
-            </Paper>
-          </Grid>
+            )}
+          </Paper>
         </Grid>
 
-        {/* Schedule Session Dialog */}
-        <Dialog open={openScheduleDialog} onClose={() => setOpenScheduleDialog(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Schedule New Session</DialogTitle>
-          <DialogContent>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
-              <TextField
-                select
-                label="Subject"
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                fullWidth
-              >
-                {subjects.map((subject) => (
-                  <MenuItem key={subject} value={subject}>
-                    {subject}
-                  </MenuItem>
-                ))}
-              </TextField>
-              
-              <TextField
-                select
-                label="Tutor"
-                value={selectedTutor}
-                onChange={(e) => setSelectedTutor(e.target.value)}
-                fullWidth
-              >
-                {tutors.map((tutor) => (
-                  <MenuItem key={tutor} value={tutor}>
-                    {tutor}
-                  </MenuItem>
-                ))}
-              </TextField>
-              
-              <DateTimePicker
-                label="Date and Time"
-                value={selectedDate}
-                onChange={(newValue) => setSelectedDate(newValue)}
-                slotProps={{ textField: { fullWidth: true } }}
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenScheduleDialog(false)}>Cancel</Button>
-            <Button onClick={handleScheduleSession} variant="contained">Schedule</Button>
-          </DialogActions>
-        </Dialog>
-      </Container>
-    </LocalizationProvider>
+        {/* Quick Actions */}
+        <Grid size={{ xs: 12 }}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Quick Actions
+            </Typography>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  startIcon={<Schedule />}
+                  onClick={() => navigate('/sessions')}
+                  sx={{ py: 2 }}
+                >
+                  Book Session
+                </Button>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  startIcon={<Assignment />}
+                  onClick={() => navigate('/homework')}
+                  sx={{ py: 2 }}
+                >
+                  View Homework
+                </Button>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  startIcon={<VideoCall />}
+                  onClick={() => navigate('/chat')}
+                  sx={{ py: 2 }}
+                >
+                  Start Chat
+                </Button>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  startIcon={<CalendarToday />}
+                  onClick={() => navigate('/study-tools')}
+                  sx={{ py: 2 }}
+                >
+                  Study Tools
+                </Button>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* Add Custom Event Dialog */}
+      <Dialog open={openEventDialog} onClose={() => setOpenEventDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add Calendar Event</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Event Title"
+            fullWidth
+            value={eventTitle}
+            onChange={(e) => setEventTitle(e.target.value)}
+            placeholder="e.g., Study Session, Exam, Meeting"
+            sx={{ mb: 2, mt: 1 }}
+          />
+          <TextField
+            margin="dense"
+            label="Date"
+            type="date"
+            fullWidth
+            value={eventDate}
+            onChange={(e) => setEventDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Time (Optional)"
+            type="time"
+            fullWidth
+            value={eventTime}
+            onChange={(e) => setEventTime(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Description (Optional)"
+            fullWidth
+            multiline
+            rows={3}
+            value={eventDescription}
+            onChange={(e) => setEventDescription(e.target.value)}
+            placeholder="Add any notes or details..."
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenEventDialog(false)}>Cancel</Button>
+          <Button
+            onClick={handleAddCustomEvent}
+            variant="contained"
+            disabled={!eventTitle || !eventDate}
+          >
+            Add Event
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* AI Chatbot */}
+      <AIChatbot />
+    </Container>
   );
 };
 

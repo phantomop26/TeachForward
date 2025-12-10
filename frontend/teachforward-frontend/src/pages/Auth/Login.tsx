@@ -13,6 +13,10 @@ import {
   InputAdornment,
   Checkbox,
   FormControlLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Visibility,
@@ -32,22 +36,40 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Forgot password state
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [resetStep, setResetStep] = useState<'email' | 'password'>('email');
+  const [resetMessage, setResetMessage] = useState('');
+  const [resetError, setResetError] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock authentication - in real app, validate with backend
-      if (email && password) {
-        localStorage.setItem('isAuthenticated', 'true');
-        navigate('/dashboard');
-      } else {
-        setError('Please enter valid credentials');
+      const payload = { email, password };
+      const res = await fetch(process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}/auth/login` : 'http://localhost:8000/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Login failed' }));
+        throw new Error(err.detail || 'Login failed');
       }
+      const data = await res.json();
+      const token = data.access_token;
+      if (!token) throw new Error('No token returned');
+      localStorage.setItem('access_token', token);
+      localStorage.setItem('isAuthenticated', 'true');
+      // Trigger custom event for Header to update immediately
+      window.dispatchEvent(new Event('auth-change'));
+      navigate('/dashboard');
     } catch (err) {
       setError('Login failed. Please try again.');
     } finally {
@@ -58,6 +80,86 @@ const Login: React.FC = () => {
   const handleSocialLogin = (provider: string) => {
     console.log(`Logging in with ${provider}`);
     // Implement social login logic
+  };
+
+  const handleForgotPasswordOpen = () => {
+    setForgotPasswordOpen(true);
+    setResetStep('email');
+    setResetEmail('');
+    setResetToken('');
+    setNewPassword('');
+    setResetMessage('');
+    setResetError('');
+  };
+
+  const handleForgotPasswordClose = () => {
+    setForgotPasswordOpen(false);
+  };
+
+  const handleRequestReset = async () => {
+    setResetLoading(true);
+    setResetError('');
+    setResetMessage('');
+
+    try {
+      const res = await fetch('http://localhost:8000/auth/reset-password-request?email=' + encodeURIComponent(resetEmail), {
+        method: 'POST',
+      });
+
+      const data = await res.json();
+      
+      if (res.ok) {
+        setResetMessage(data.message);
+        // If we got a token (development mode), move to password reset step
+        if (data.reset_token) {
+          setResetToken(data.reset_token);
+          setResetStep('password');
+          setResetMessage('Enter your new password below');
+        }
+      } else {
+        setResetError(data.detail || 'Failed to request password reset');
+      }
+    } catch (err) {
+      setResetError('Failed to request password reset');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (newPassword.length < 6) {
+      setResetError('Password must be at least 6 characters');
+      return;
+    }
+
+    setResetLoading(true);
+    setResetError('');
+
+    try {
+      const res = await fetch('http://localhost:8000/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: resetToken,
+          new_password: newPassword,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setResetMessage('Password reset successful! You can now login with your new password.');
+        setTimeout(() => {
+          handleForgotPasswordClose();
+        }, 2000);
+      } else {
+        setResetError(data.detail || 'Failed to reset password');
+      }
+    } catch (err) {
+      setResetError('Failed to reset password');
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   return (
@@ -73,7 +175,7 @@ const Login: React.FC = () => {
         <Paper
           elevation={3}
           sx={{
-            padding: 4,
+            p: 4,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -153,7 +255,7 @@ const Login: React.FC = () => {
                 }
                 label="Remember me"
               />
-              <Link href="#" variant="body2">
+              <Link href="#" variant="body2" onClick={handleForgotPasswordOpen}>
                 Forgot password?
               </Link>
             </Box>
@@ -241,8 +343,79 @@ const Login: React.FC = () => {
           </Box>
         </Box>
       </Box>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={forgotPasswordOpen} onClose={handleForgotPasswordClose} maxWidth="sm" fullWidth>
+        <DialogTitle>Reset Password</DialogTitle>
+        <DialogContent>
+          {resetMessage && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {resetMessage}
+            </Alert>
+          )}
+          {resetError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {resetError}
+            </Alert>
+          )}
+
+          {resetStep === 'email' && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                Enter your email address and we'll send you a password reset link.
+              </Typography>
+              <TextField
+                fullWidth
+                label="Email Address"
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                autoFocus
+              />
+            </Box>
+          )}
+
+          {resetStep === 'password' && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                Enter your new password (minimum 6 characters).
+              </Typography>
+              <TextField
+                fullWidth
+                label="New Password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoFocus
+              />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleForgotPasswordClose}>Cancel</Button>
+          {resetStep === 'email' && (
+            <Button
+              onClick={handleRequestReset}
+              variant="contained"
+              disabled={!resetEmail || resetLoading}
+            >
+              {resetLoading ? 'Sending...' : 'Send Reset Link'}
+            </Button>
+          )}
+          {resetStep === 'password' && (
+            <Button
+              onClick={handleResetPassword}
+              variant="contained"
+              disabled={!newPassword || resetLoading}
+            >
+              {resetLoading ? 'Resetting...' : 'Reset Password'}
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
 
 export default Login;
+

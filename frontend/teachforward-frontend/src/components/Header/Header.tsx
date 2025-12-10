@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -25,16 +25,46 @@ import {
   Person as PersonIcon,
   Login as LoginIcon,
   Logout as LogoutIcon,
+  VideoCall as VideoCallIcon,
+  Assignment as AssignmentIcon,
+  Grade as GradeIcon,
 } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 
 const Header: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // This would come from auth context
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // Check authentication on mount and when localStorage changes
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('access_token');
+      const newLoginState = !!token;
+      console.log('Header: Checking auth, token exists:', newLoginState); // Debug log
+      setIsLoggedIn(newLoginState);
+    };
+    
+    checkAuth();
+    
+    // Listen for storage changes (e.g., login in another tab or same window)
+    const handleStorageChange = () => {
+      console.log('Header: Auth change event received'); // Debug log
+      checkAuth();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    // Also listen for custom auth change event
+    window.addEventListener('auth-change', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('auth-change', handleStorageChange);
+    };
+  }, []);
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -49,13 +79,20 @@ const Header: React.FC = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('isAuthenticated');
     setIsLoggedIn(false);
     handleMenuClose();
-    navigate('/');
+    // Trigger auth change event
+    window.dispatchEvent(new Event('auth-change'));
+    navigate('/login');
   };
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', requireAuth: true },
+    { text: 'Sessions', icon: <VideoCallIcon />, path: '/sessions', requireAuth: true },
+    { text: 'Homework', icon: <AssignmentIcon />, path: '/homework', requireAuth: true },
+    { text: 'Grades', icon: <GradeIcon />, path: '/grades', requireAuth: true },
     { text: 'Study Tools', icon: <PsychologyIcon />, path: '/study-tools', requireAuth: false },
     { text: 'Find Tutors', icon: <SchoolIcon />, path: '/', requireAuth: false },
   ];
