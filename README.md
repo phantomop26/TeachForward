@@ -29,7 +29,7 @@ cd ..
 
 3. **Install Dependencies & Start**
 ```bash
-./start.sh
+./local/start.sh
 ```
 
 This will:
@@ -41,7 +41,7 @@ This will:
 
 4. **Stop Application**
 ```bash
-./stop.sh
+./local/stop.sh
 ```
 
 ## 📁 Project Structure
@@ -60,17 +60,20 @@ senior-design/
 │   │       ├── ai.py         # AI features
 │   │       └── grades.py     # Grade tracking
 │   ├── requirements.txt
+│   ├── railway.toml     # Railway deployment config
 │   └── .env            # Environment variables
 ├── frontend/
 │   └── teachforward-frontend/  # React app
 │       ├── src/
 │       │   ├── pages/        # Main pages
 │       │   └── components/   # Reusable components
-│       └── package.json
+│       ├── package.json
+│       └── railway.toml      # Railway deployment config
+├── local/              # Local development scripts
+│   ├── start.sh        # Start both services locally
+│   └── stop.sh         # Stop services
 ├── uploads/            # File storage
 ├── logs/              # Application logs
-├── start.sh           # Start script
-├── stop.sh            # Stop script
 └── README.md
 ```
 

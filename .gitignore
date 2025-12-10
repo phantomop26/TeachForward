@@ -1,7 +1,3 @@
-# Railway-specific files
-railway.toml
-.railway/
-
 # Environment files
 .env
 .env.local
@@ -57,6 +53,10 @@ uploads/
 *.png
 *.jpeg
 *.gif
+
+# Local development scripts (not needed in Railway)
+# Keep local/ folder but could ignore if you want
+# local/
 
 # Testing
 .coverage

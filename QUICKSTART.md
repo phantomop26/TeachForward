@@ -4,12 +4,12 @@
 
 **Start Application:**
 ```bash
-./start.sh
+./local/start.sh
 ```
 
 **Stop Application:**
 ```bash
-./stop.sh
+./local/stop.sh
 ```
 
 **View Logs:**
@@ -59,7 +59,7 @@ cp .env.example .env
 2. **Start Application:**
 ```bash
 cd ..
-./start.sh
+./local/start.sh
 ```
 
 3. **Open Browser:**
@@ -72,9 +72,9 @@ cd ..
 **Application won't start:**
 ```bash
 # Clean everything and restart
-./stop.sh
+./local/stop.sh
 rm -rf backend/venv frontend/teachforward-frontend/node_modules
-./start.sh
+./local/start.sh
 ```
 
 **Port already in use:**
