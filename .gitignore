@@ -1,0 +1,64 @@
+# Railway-specific files
+railway.toml
+.railway/
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+backend/.env
+backend/.env.local
+
+# Python
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+backend/dev.db
+*.db
+
+# Node
+frontend/teachforward-frontend/node_modules/
+frontend/teachforward-frontend/build/
+frontend/teachforward-frontend/.env.local
+node_modules/
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Upload files (store in S3/Railway volumes in production)
+uploads/
+*.pdf
+*.jpg
+*.png
+*.jpeg
+*.gif
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/

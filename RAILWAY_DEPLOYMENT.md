@@ -1,151 +1,208 @@
 # Railway Deployment Guide
 
-## 🚂 Deploying to Railway
+## 🚂 Deploying to Railway - Complete Guide
 
-Railway is perfect for FastAPI + React apps with automatic PostgreSQL database provisioning.
+Railway automatically detects your Python/Node setup and deploys correctly.
 
 ---
 
 ## 📋 Prerequisites
 
-1. **GitHub Account** - Your code should be on GitHub
-2. **Railway Account** - Sign up at [railway.app](https://railway.app)
-3. **OpenAI API Key** - Ready to add as environment variable
+1. ✅ **GitHub Account** - Code must be on GitHub
+2. ✅ **Railway Account** - Sign up at [railway.app](https://railway.app)
+3. ✅ **OpenAI API Key** - Ready to add as environment variable
+4. ✅ **Push all changes to GitHub**
 
 ---
 
-## 🚀 Step-by-Step Deployment
+## 🚀 Deploy Backend (FastAPI + Python)
 
-### Part 1: Deploy Backend (FastAPI)
+### 1. Create Railway Project
 
-#### 1. Create Railway Project
+1. Go to [railway.app/new](https://railway.app/new)
+2. Click **"Deploy from GitHub repo"**
+3. Authorize Railway to access your GitHub
+4. Select **`TeachForward`** repository
 
-1. Go to [railway.app](https://railway.app)
-2. Click **"New Project"**
-3. Select **"Deploy from GitHub repo"**
-4. Choose your `TeachForward` repository
-5. Railway will detect it's a monorepo
+### 2. Add Backend Service
 
-#### 2. Configure Backend Service
+Railway will auto-detect the monorepo structure:
 
-1. **Add New Service** → "GitHub Repo"
-2. **Settings**:
-   - **Service Name**: `teachforward-backend`
+1. Click **"Add a Service"**
+2. Select **"GitHub Repo"**
+3. **Configure Service:**
+   - **Name**: `backend` (or `teachforward-backend`)
    - **Root Directory**: `backend`
-   - **Build Command**: (leave empty, Railway auto-detects)
-   - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - Leave everything else as default
 
-#### 3. Add PostgreSQL Database
+Railway will automatically:
+- ✅ Detect it's a Python app (from `requirements.txt`)
+- ✅ Install Python dependencies
+- ✅ Run `uvicorn app.main:app`
 
-1. In your project, click **"New"** → **"Database"** → **"PostgreSQL"**
-2. Railway will create a database and set `DATABASE_URL` automatically
-3. Your backend will connect to it automatically!
+**The `backend/railway.toml` file tells Railway exactly how to build and run!**
 
-#### 4. Set Environment Variables (🔒 THIS HIDES YOUR API KEYS)
+### 3. Add PostgreSQL Database
 
-1. Click on `teachforward-backend` service
+1. Click **"New"** → **"Database"** → **"Add PostgreSQL"**
+2. Railway automatically:
+   - Creates database
+   - Sets `DATABASE_URL` environment variable
+   - Your backend reads it automatically!
+
+### 4. Add Environment Variables (🔒 SECURE - Keys Stay Hidden)
+
+1. Click **backend service**
 2. Go to **"Variables"** tab
-3. Add these variables:
+3. Click **"New Variable"**
+4. Add these:
 
-```
+```bash
 OPENAI_API_KEY=sk-your-actual-openai-key-here
-SECRET_KEY=generate-random-32-char-string-here
-ALLOWED_ORIGINS=https://your-frontend-url.railway.app
+SECRET_KEY=use-command-below-to-generate
+ALLOWED_ORIGINS=*
 ```
 
-**To generate SECRET_KEY:**
+**Generate SECRET_KEY:**
 ```bash
 openssl rand -hex 32
 ```
 
+Copy the output and paste as `SECRET_KEY` value.
+
 ⚠️ **IMPORTANT**: 
-- Railway environment variables are **encrypted and hidden**
-- Never commit `.env` file to GitHub
-- API keys stay secure in Railway dashboard
+- ✅ Railway encrypts these variables
+- ✅ They're NEVER in your code
+- ✅ They're NEVER in GitHub
+- ✅ Only visible in Railway dashboard
 
-#### 5. Deploy Backend
+### 5. Deploy Backend
 
-1. Railway will automatically deploy when you push to GitHub
-2. Or click **"Deploy"** manually
-3. Wait for build to complete
-4. Note your backend URL: `https://teachforward-backend.railway.app`
+1. Railway deploys automatically on setup
+2. Wait 2-3 minutes
+3. Click on **backend service** → **Settings** → **Domains**
+4. Copy your backend URL (something like):
+   ```
+   https://teachforward-backend-production.up.railway.app
+   ```
+
+### 6. Test Backend
+
+Open in browser:
+```
+https://your-backend-url.railway.app/health
+```
+
+Should show: `{"status":"ok"}`
+
+API Docs:
+```
+https://your-backend-url.railway.app/docs
+```
 
 ---
 
-### Part 2: Deploy Frontend (React)
+## 🎨 Deploy Frontend (React + TypeScript)
 
-#### 1. Add Frontend Service
+### 1. Update API URL in Frontend
 
-1. In same Railway project, click **"New"** → **"GitHub Repo"**
-2. Select same repository
-3. **Settings**:
-   - **Service Name**: `teachforward-frontend`
-   - **Root Directory**: `frontend/teachforward-frontend`
-   - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npx serve -s build -l $PORT`
-
-#### 2. Update Frontend API URLs
-
-**Before deploying**, update your frontend to use Railway backend URL:
+**IMPORTANT**: Before deploying frontend, update it to use Railway backend URL.
 
 Create `frontend/teachforward-frontend/.env.production`:
+
 ```env
-REACT_APP_API_URL=https://teachforward-backend.railway.app
+REACT_APP_API_URL=https://your-backend-url.railway.app
 ```
 
-Then update your API calls to use this:
+Replace `your-backend-url` with your actual Railway backend URL.
+
+### 2. Update Frontend Code to Use Environment Variable
+
+This is already done in your code, but verify files use:
+
 ```typescript
-// In all fetch calls, replace:
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-// Example:
+// Then in fetch calls:
 fetch(`${API_BASE}/auth/login`, ...)
 ```
 
-#### 3. Add serve package
+### 3. Commit Changes
 
 ```bash
-cd frontend/teachforward-frontend
-npm install --save serve
+cd /Users/sks/Documents/Funda/Documents/sd/senior-design
+git add .
+git commit -m "Add Railway deployment config and production env"
+git push origin main
 ```
 
-Commit and push changes.
+### 4. Add Frontend Service to Railway
 
-#### 4. Deploy Frontend
+1. In same Railway project, click **"New"** → **"GitHub Repo"**
+2. Select **same repository** again
+3. **Configure Service:**
+   - **Name**: `frontend` (or `teachforward-frontend`)
+   - **Root Directory**: `frontend/teachforward-frontend`
+   - Leave other settings as default
 
-1. Railway will auto-deploy on push
-2. Note your frontend URL: `https://teachforward-frontend.railway.app`
+Railway will automatically:
+- ✅ Detect it's a Node/React app (from `package.json`)
+- ✅ Run `npm install && npm run build`
+- ✅ Serve with `serve` (from `railway.toml`)
+
+**The `frontend/teachforward-frontend/railway.toml` file handles everything!**
+
+### 5. Get Frontend URL
+
+1. Click **frontend service**
+2. Go to **Settings** → **Domains**
+3. Copy your frontend URL:
+   ```
+   https://teachforward-frontend-production.up.railway.app
+   ```
+
+### 6. Update Backend CORS
+
+Go back to **backend service** → **Variables** and update:
+
+```
+ALLOWED_ORIGINS=https://your-frontend-url.railway.app
+```
+
+Or set to `*` for testing (not recommended for production):
+```
+ALLOWED_ORIGINS=*
+```
+
+### 7. Redeploy Backend (if needed)
+
+If you changed CORS:
+- Click backend service
+- Deployments → Click "..." on latest deployment → "Redeploy"
 
 ---
 
-### Part 3: Configure CORS
+## ✅ Final Testing
 
-Update backend CORS to allow your Railway frontend:
-
-1. In Railway, go to backend **"Variables"**
-2. Update `ALLOWED_ORIGINS`:
-```
-ALLOWED_ORIGINS=https://teachforward-frontend.railway.app
+### Test Backend:
+```bash
+curl https://your-backend-url.railway.app/health
+# Should return: {"status":"ok"}
 ```
 
-Or edit `backend/app/main.py` to read from environment:
-```python
-import os
-
-origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-```
+### Test Frontend:
+1. Open: `https://your-frontend-url.railway.app`
+2. Click **Register**
+3. Create an account
+4. Login and test features:
+   - ✅ Dashboard loads
+   - ✅ Can add courses in Grades
+   - ✅ AI flashcards work (tests OpenAI key)
+   - ✅ Calendar shows events
 
 ---
 
-## 🔐 How API Keys Stay Hidden
+## 🔐 How API Keys Stay Secure
 
 ### On Railway (Production):
 
