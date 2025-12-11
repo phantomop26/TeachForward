@@ -97,6 +97,14 @@ const Register: React.FC = () => {
       }
     }
     
+    if (activeStep === 1) {
+      // Validate academic profile - tutors must select subjects
+      if (formData.userType === 'tutor' && formData.subjects.length === 0) {
+        setError('Tutors must select at least one subject they can teach');
+        return;
+      }
+    }
+    
     setError('');
     setActiveStep(prev => prev + 1);
   };
@@ -130,7 +138,8 @@ const Register: React.FC = () => {
         email: formData.email,
         password: password,
         full_name: `${formData.firstName} ${formData.lastName}`,
-        role: formData.userType
+        role: formData.userType,
+        subjects: formData.userType === 'tutor' ? formData.subjects.join(', ') : undefined
       };
 
       const res = await fetch(process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}/auth/register` : 'http://localhost:8000/auth/register', {
@@ -297,13 +306,17 @@ const Register: React.FC = () => {
             <TextField
               select
               fullWidth
-              label="Subjects of Interest"
+              label={formData.userType === 'tutor' ? 'Subjects You Can Teach (Required)' : 'Subjects of Interest'}
               value={formData.subjects}
               onChange={(e) => handleInputChange('subjects', e.target.value)}
               SelectProps={{
                 multiple: true,
               }}
-              helperText="Select multiple subjects you want to study or teach"
+              helperText={formData.userType === 'tutor' 
+                ? 'Select all subjects you are qualified to teach' 
+                : 'Select multiple subjects you want to study'}
+              required={formData.userType === 'tutor'}
+              error={formData.userType === 'tutor' && formData.subjects.length === 0}
             >
               {subjects.map((subject) => (
                 <MenuItem key={subject} value={subject}>

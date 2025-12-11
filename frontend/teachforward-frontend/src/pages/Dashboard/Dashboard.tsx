@@ -131,8 +131,8 @@ const Dashboard: React.FC = () => {
         setUserName(user.full_name || user.email);
       }
 
-      // Fetch sessions
-      const sessionsRes = await fetch('http://localhost:8000/sessions/', { headers });
+      // Fetch sessions (for both students and tutors)
+      const sessionsRes = await fetch('http://localhost:8000/sessions/my-sessions', { headers });
       if (sessionsRes.ok) {
         const sessionsData = await sessionsRes.json();
         setSessions(sessionsData || []);

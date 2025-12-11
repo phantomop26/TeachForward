@@ -34,7 +34,12 @@ def list_assignments(db: Session = Depends(get_db), current_user=Depends(get_cur
     if current_user.role == "tutor":
         return crud.get_assignments(db, tutor_id=current_user.id)
     else:
-        return crud.get_assignments(db)
+        # Students see assignments assigned to them or general assignments (student_id is None)
+        query = db.query(models.Assignment).filter(
+            (models.Assignment.student_id == current_user.id) | 
+            (models.Assignment.student_id == None)
+        )
+        return query.all()
 
 @router.post("/submit")
 def submit_assignment(

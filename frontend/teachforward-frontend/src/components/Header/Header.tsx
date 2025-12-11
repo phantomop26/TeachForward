@@ -94,7 +94,6 @@ const Header: React.FC = () => {
     { text: 'Homework', icon: <AssignmentIcon />, path: '/homework', requireAuth: true },
     { text: 'Grades', icon: <GradeIcon />, path: '/grades', requireAuth: true },
     { text: 'Study Tools', icon: <PsychologyIcon />, path: '/study-tools', requireAuth: false },
-    { text: 'Find Tutors', icon: <SchoolIcon />, path: '/', requireAuth: false },
   ];
 
   const drawer = (

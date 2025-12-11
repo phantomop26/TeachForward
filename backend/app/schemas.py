@@ -15,6 +15,7 @@ class UserOut(BaseModel):
     role: str
     bio: Optional[str] = None
     rating: Optional[int] = None
+    subjects: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -22,6 +23,7 @@ class UserOut(BaseModel):
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     bio: Optional[str] = None
+    subjects: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str
@@ -50,13 +52,18 @@ class AssignmentCreate(BaseModel):
     title: str
     description: Optional[str]
     due_date: Optional[datetime]
+    student_id: Optional[int] = None
+    session_id: Optional[int] = None
 
 class AssignmentOut(BaseModel):
     id: int
     tutor_id: int
+    student_id: Optional[int]
+    session_id: Optional[int]
     title: str
     description: Optional[str]
     due_date: Optional[datetime]
+    created_at: datetime
     
     class Config:
         orm_mode = True

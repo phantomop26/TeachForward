@@ -12,6 +12,7 @@ class User(Base):
     role = Column(String, default="student")
     bio = Column(Text, nullable=True)
     rating = Column(Integer, nullable=True)
+    subjects = Column(String, nullable=True)  # Comma-separated list of subjects tutor can teach
     created_at = Column(DateTime, default=datetime.utcnow)
     courses = relationship("Course", back_populates="student")
 
@@ -41,11 +42,15 @@ class Assignment(Base):
     __tablename__ = "assignments"
     id = Column(Integer, primary_key=True, index=True)
     tutor_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Specific student or None for all
+    session_id = Column(Integer, ForeignKey("sessions.id"), nullable=True)  # Link to specific session
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     due_date = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    tutor = relationship("User")
+    tutor = relationship("User", foreign_keys=[tutor_id])
+    student = relationship("User", foreign_keys=[student_id])
+    session = relationship("SessionBooking", foreign_keys=[session_id])
 
 class Submission(Base):
     __tablename__ = "submissions"

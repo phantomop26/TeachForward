@@ -1,5 +1,119 @@
-INFO:     Started server process [34370]
+INFO:     Started server process [51876]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:57240 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50088 - "OPTIONS /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50092 - "OPTIONS /sessions/tutors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50094 - "OPTIONS /sessions/my-sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50095 - "OPTIONS /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50097 - "OPTIONS /sessions/tutors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50098 - "OPTIONS /sessions/my-sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50094 - "GET /sessions/my-sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50097 - "GET /sessions/tutors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50095 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50094 - "GET /sessions/tutors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50098 - "GET /sessions/my-sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50097 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50097 - "OPTIONS /sessions/all-students HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50097 - "GET /sessions/all-students HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50104 - "OPTIONS /sessions/assign-homework HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50104 - "POST /sessions/assign-homework HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50110 - "OPTIONS /auth/login HTTP/1.1" 200 OK
+DEBUG: Login attempt for email: sks9379@nyu.edu
+DEBUG: User found: True
+DEBUG: User ID: 1, Email: sks9379@nyu.edu
+DEBUG: Password valid: True
+DEBUG: Password length received: 13
+INFO:     127.0.0.1:50110 - "POST /auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50110 - "OPTIONS /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50112 - "OPTIONS /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50112 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50110 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50112 - "OPTIONS /sessions/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50112 - "GET /sessions/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50110 - "GET /sessions/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50112 - "OPTIONS /homework/assignments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50112 - "GET /homework/assignments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50112 - "OPTIONS /homework/submissions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50110 - "GET /homework/assignments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50110 - "GET /homework/submissions HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:50110 - "OPTIONS /progress/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50112 - "GET /homework/submissions HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:50112 - "GET /progress/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50110 - "GET /progress/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50112 - "OPTIONS /grades/courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50112 - "GET /grades/courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50112 - "OPTIONS /grades/courses/1/grade HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50110 - "GET /grades/courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50112 - "GET /grades/courses/1/grade HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50112 - "OPTIONS /grades/courses/2/grade HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50110 - "GET /grades/courses/1/grade HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50112 - "GET /grades/courses/2/grade HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50110 - "GET /grades/courses/2/grade HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50118 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50119 - "GET /sessions/tutors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50120 - "GET /sessions/my-sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50122 - "GET /sessions/tutors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50118 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50119 - "GET /sessions/my-sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50126 - "OPTIONS /sessions/book HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50126 - "POST /sessions/book HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50126 - "GET /sessions/my-sessions HTTP/1.1" 200 OK
+DEBUG: Login attempt for email: sahilsingh26012004@gmail.com
+DEBUG: User found: True
+DEBUG: User ID: 7, Email: sahilsingh26012004@gmail.com
+DEBUG: Password valid: True
+DEBUG: Password length received: 13
+INFO:     127.0.0.1:50138 - "POST /auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50138 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50138 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50138 - "GET /sessions/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50140 - "GET /sessions/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50138 - "GET /homework/assignments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50138 - "GET /homework/submissions HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:50140 - "GET /homework/assignments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50138 - "GET /progress/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50140 - "GET /homework/submissions HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:50140 - "GET /progress/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50138 - "GET /grades/courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50140 - "GET /grades/courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50259 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50259 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50259 - "OPTIONS /sessions/my-sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50265 - "OPTIONS /sessions/my-sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50259 - "GET /sessions/my-sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50265 - "GET /sessions/my-sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50265 - "GET /homework/assignments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50265 - "GET /homework/assignments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50265 - "GET /homework/submissions HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:50259 - "GET /homework/submissions HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:50259 - "GET /progress/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50265 - "GET /progress/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50265 - "GET /grades/courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50259 - "GET /grades/courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50270 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50270 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50270 - "GET /progress/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50270 - "GET /progress/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50272 - "OPTIONS /homework/my-submissions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50272 - "GET /homework/my-submissions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50272 - "GET /homework/my-submissions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50501 - "OPTIONS /homework/assignments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50503 - "OPTIONS /homework/assignments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50502 - "GET /homework/my-submissions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50501 - "GET /homework/assignments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50503 - "GET /homework/my-submissions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50502 - "GET /homework/assignments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50502 - "OPTIONS /grades/courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50503 - "OPTIONS /grades/study-time HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50501 - "OPTIONS /grades/study-time/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50502 - "POST /grades/study-time HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50507 - "OPTIONS /grades/courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50501 - "GET /grades/study-time/total HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50508 - "OPTIONS /grades/study-time/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50501 - "GET /grades/study-time/total HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50503 - "GET /grades/courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50501 - "GET /grades/courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50501 - "POST /grades/study-time HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50520 - "OPTIONS /ai/generate-flashcards HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50520 - "POST /ai/generate-flashcards HTTP/1.1" 200 OK

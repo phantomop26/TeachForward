@@ -57,11 +57,38 @@ def update_user(db: Session, user_id: int, full_name: Optional[str] = None, bio:
     return user
 
 def create_session(db: Session, student_id: int, session_in: schemas.SessionCreate):
-    # Generate a simple Zoom-style meeting link (in production, you'd use Zoom API)
-    import random
-    import string
-    meeting_id = ''.join(random.choices(string.digits, k=11))
-    zoom_link = f"https://zoom.us/j/{meeting_id}"
+    """
+    Create a tutoring session with real Zoom meeting integration
+    Falls back to mock link if Zoom API is not configured
+    """
+    from .zoom_api import get_zoom_api, ZoomAPIError
+    
+    zoom_link = None
+    zoom_api = get_zoom_api()
+    
+    if zoom_api:
+        try:
+            # session_in.start and session_in.end are already datetime objects from Pydantic
+            start_dt = session_in.start
+            end_dt = session_in.end
+            
+            # Calculate duration in minutes
+            duration_minutes = int((end_dt - start_dt).total_seconds() / 60)
+            
+            # Create real Zoom meeting
+            meeting = zoom_api.create_meeting(
+                topic=session_in.topic or "Tutoring Session",
+                start_time=start_dt,
+                duration_minutes=duration_minutes
+            )
+            zoom_link = meeting["join_url"]
+            
+        except (ZoomAPIError, Exception) as e:
+            print(f"Zoom API error, falling back to mock link: {e}")
+            zoom_link = _generate_mock_zoom_link()
+    else:
+        # Fallback to mock link if Zoom not configured
+        zoom_link = _generate_mock_zoom_link()
     
     s = models.SessionBooking(
         student_id=student_id,
@@ -75,6 +102,13 @@ def create_session(db: Session, student_id: int, session_in: schemas.SessionCrea
     db.commit()
     db.refresh(s)
     return s
+
+def _generate_mock_zoom_link() -> str:
+    """Generate a mock Zoom link for development/testing"""
+    import random
+    import string
+    meeting_id = ''.join(random.choices(string.digits, k=11))
+    return f"https://zoom.us/j/{meeting_id}"
 
 def get_sessions_for_student(db: Session, student_id: int):
     return db.query(models.SessionBooking).filter(models.SessionBooking.student_id == student_id).all()

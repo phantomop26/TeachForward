@@ -302,6 +302,64 @@ const Grades: React.FC = () => {
     }
   };
 
+  const handleDeleteComponent = async (componentId: number, courseId: number) => {
+    if (!window.confirm('Are you sure you want to delete this grade component? All associated grade entries will also be deleted.')) {
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`http://localhost:8000/grades/components/${componentId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        await loadGradeComponents(courseId);
+      } else {
+        setError('Failed to delete component');
+      }
+    } catch (err) {
+      setError('Network error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteEntry = async (entryId: number, courseId: number) => {
+    if (!window.confirm('Are you sure you want to delete this grade entry?')) {
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`http://localhost:8000/grades/entries/${entryId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        await loadGradeComponents(courseId);
+      } else {
+        setError('Failed to delete entry');
+      }
+    } catch (err) {
+      setError('Network error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const calculateCourseGrade = (courseId: number): number => {
     const components = gradeComponents.filter(gc => gc.course_id === courseId);
     if (components.length === 0) return 0;
@@ -613,7 +671,11 @@ const Grades: React.FC = () => {
                                   >
                                     <Add fontSize="small" />
                                   </IconButton>
-                                  <IconButton size="small" color="error">
+                                  <IconButton 
+                                    size="small" 
+                                    color="error"
+                                    onClick={() => handleDeleteComponent(comp.id, course.id)}
+                                  >
                                     <Delete fontSize="small" />
                                   </IconButton>
                                 </TableCell>
@@ -638,7 +700,7 @@ const Grades: React.FC = () => {
                             label={`${component?.name}: ${entry.name} - ${entry.score}/${entry.max_score} (${percentage.toFixed(1)}%)`}
                             size="small"
                             sx={{ mr: 1, mb: 1 }}
-                            onDelete={() => {/* TODO: implement delete */}}
+                            onDelete={() => handleDeleteEntry(entry.id, course.id)}
                           />
                         );
                       })}

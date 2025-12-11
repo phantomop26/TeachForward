@@ -78,6 +78,24 @@ def login(form_data: schemas.UserCreate, db: Session = Depends(get_db)):
 def me(current_user=Depends(get_current_user)):
     return current_user
 
+@router.put("/update-profile", response_model=schemas.UserOut)
+def update_profile(
+    profile_update: schemas.UserUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    """Update user profile including subjects for tutors"""
+    if profile_update.full_name is not None:
+        current_user.full_name = profile_update.full_name
+    if profile_update.bio is not None:
+        current_user.bio = profile_update.bio
+    if profile_update.subjects is not None:
+        current_user.subjects = profile_update.subjects
+    
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
 @router.post("/reset-password-request")
 def reset_password_request(email: str, db: Session = Depends(get_db)):
     """

@@ -10,6 +10,7 @@ import {
   Avatar,
   Rating,
   Paper,
+  Chip,
 } from '@mui/material';
 import {
   School,
@@ -58,24 +59,24 @@ const Home: React.FC = () => {
 
   const testimonials = [
     {
-      name: 'Sarah Johnson',
-      role: 'High School Student',
+      name: 'Student User',
+      role: 'Beta Tester',
       rating: 5,
-      comment: 'TeachForward helped me improve my math grades from C to A! The tutors are amazing.',
+      comment: 'The platform makes it easy to connect with tutors and manage my study schedule in one place.',
       avatar: '/api/placeholder/40/40',
     },
     {
-      name: 'Michael Chen',
-      role: 'College Student',
+      name: 'Tutor User',
+      role: 'Beta Tester',
       rating: 5,
-      comment: 'The AI study tools are incredible. The concept maps really help me understand complex topics.',
+      comment: 'Great tools for managing sessions and assignments. The AI study features are a nice addition.',
       avatar: '/api/placeholder/40/40',
     },
     {
-      name: 'Emily Davis',
-      role: 'Parent',
+      name: 'Project Team',
+      role: 'Team B22',
       rating: 5,
-      comment: 'My daughter loves the interactive sessions. The platform is user-friendly and effective.',
+      comment: 'Built as a senior design project to demonstrate modern web development and AI integration.',
       avatar: '/api/placeholder/40/40',
     },
   ];
@@ -177,38 +178,53 @@ const Home: React.FC = () => {
       {/* Stats Section */}
       <Box sx={{ backgroundColor: 'grey.50', py: 8 }}>
         <Container>
-          <Grid container spacing={4} sx={{ textAlign: 'center' }}>
+          <Typography variant="h3" component="h2" textAlign="center" gutterBottom sx={{ mb: 6 }}>
+            Platform Highlights
+          </Typography>
+          <Grid container spacing={4}>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <Typography variant="h3" color="primary.main" fontWeight="bold">
-                10,000+
-              </Typography>
-              <Typography variant="h6" color="text.secondary">
-                Students Helped
-              </Typography>
+              <Card sx={{ textAlign: 'center', p: 3, height: '100%', boxShadow: 3 }}>
+                <Schedule sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+                <Typography variant="h5" fontWeight="bold" gutterBottom>
+                  24/7
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Platform Access
+                </Typography>
+              </Card>
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <Typography variant="h3" color="primary.main" fontWeight="bold">
-                500+
-              </Typography>
-              <Typography variant="h6" color="text.secondary">
-                Qualified Tutors
-              </Typography>
+              <Card sx={{ textAlign: 'center', p: 3, height: '100%', boxShadow: 3 }}>
+                <Psychology sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+                <Typography variant="h5" fontWeight="bold" gutterBottom>
+                  AI-Powered
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Study Tools
+                </Typography>
+              </Card>
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <Typography variant="h3" color="primary.main" fontWeight="bold">
-                50+
-              </Typography>
-              <Typography variant="h6" color="text.secondary">
-                Subjects Covered
-              </Typography>
+              <Card sx={{ textAlign: 'center', p: 3, height: '100%', boxShadow: 3 }}>
+                <VideoCall sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+                <Typography variant="h5" fontWeight="bold" gutterBottom>
+                  Real-Time
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Video Sessions
+                </Typography>
+              </Card>
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <Typography variant="h3" color="primary.main" fontWeight="bold">
-                95%
-              </Typography>
-              <Typography variant="h6" color="text.secondary">
-                Student Satisfaction
-              </Typography>
+              <Card sx={{ textAlign: 'center', p: 3, height: '100%', boxShadow: 3 }}>
+                <TrendingUp sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+                <Typography variant="h5" fontWeight="bold" gutterBottom>
+                  Secure
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Grade Tracking
+                </Typography>
+              </Card>
             </Grid>
           </Grid>
         </Container>
@@ -217,34 +233,48 @@ const Home: React.FC = () => {
       {/* Testimonials Section */}
       <Container sx={{ py: 8 }}>
         <Typography variant="h3" component="h2" textAlign="center" gutterBottom>
-          What Our Students Say
+          Platform Feedback
         </Typography>
         <Typography variant="h6" textAlign="center" color="text.secondary" sx={{ mb: 6 }}>
-          Real feedback from students who have transformed their learning experience
+          Feedback from beta testers and project stakeholders
         </Typography>
         
         <Grid container spacing={4}>
           {testimonials.map((testimonial, index) => (
             <Grid size={{ xs: 12, md: 4 }} key={index}>
-              <Paper sx={{ p: 4, height: '100%' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Avatar sx={{ mr: 2 }} src={testimonial.avatar}>
+              <Card 
+                sx={{ 
+                  p: 4, 
+                  height: '100%',
+                  boxShadow: 3,
+                  transition: 'transform 0.3s ease-in-out',
+                  '&:hover': {
+                    transform: 'translateY(-8px)',
+                    boxShadow: 6,
+                  },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                  <Avatar sx={{ mr: 2, bgcolor: 'primary.main', width: 50, height: 50 }} src={testimonial.avatar}>
                     {testimonial.name[0]}
                   </Avatar>
                   <Box>
-                    <Typography variant="subtitle1" fontWeight="bold">
+                    <Typography variant="h6" fontWeight="bold">
                       {testimonial.name}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {testimonial.role}
-                    </Typography>
+                    <Chip 
+                      label={testimonial.role} 
+                      size="small" 
+                      color="primary" 
+                      variant="outlined"
+                    />
                   </Box>
                 </Box>
-                <Rating value={testimonial.rating} readOnly sx={{ mb: 2 }} />
-                <Typography variant="body1" style={{ fontStyle: 'italic' }}>
+                <Rating value={testimonial.rating} readOnly sx={{ mb: 2 }} size="small" />
+                <Typography variant="body1" color="text.secondary" sx={{ fontStyle: 'italic', lineHeight: 1.6 }}>
                   "{testimonial.comment}"
                 </Typography>
-              </Paper>
+              </Card>
             </Grid>
           ))}
         </Grid>
@@ -253,18 +283,18 @@ const Home: React.FC = () => {
       {/* CTA Section */}
       <Box
         sx={{
-          backgroundColor: 'primary.main',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
-          py: 8,
+          py: 10,
           textAlign: 'center',
         }}
       >
         <Container maxWidth="md">
-          <Typography variant="h3" component="h2" gutterBottom>
-            Ready to Start Learning?
+          <Typography variant="h3" component="h2" gutterBottom fontWeight="bold">
+            Ready to Get Started?
           </Typography>
-          <Typography variant="h6" sx={{ mb: 4, opacity: 0.9 }}>
-            Join thousands of students who have improved their grades with TeachForward
+          <Typography variant="h6" sx={{ mb: 4, opacity: 0.95 }}>
+            Experience our comprehensive learning platform with AI-powered study tools
           </Typography>
           <Button
             component={Link}
